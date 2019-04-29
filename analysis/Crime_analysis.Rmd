@@ -1,0 +1,36 @@
+---
+title: "NYC Crime Analysis"
+author: "Xinze Liu (xl2822)"
+date: "2019/4/24"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## I. Data Introduction
+
+
+
+```{r cars}
+data_raw <- read.csv("../Data/raw/NYPD_Complaint_Data_Current__Year_To_Date_.csv")
+```
+
+```{r}
+apply(data_raw, 2, summary)
+```
+
+## II. Description of the data source
+
+## III. Description of data import / cleaning / transformation
+
+## IV. Analysis of missing values
+
+## V. Results
+
+## VI. Interactive component
+
+## VII. Conclusion
