@@ -1,6 +1,6 @@
 ---
 title: "NYC Crime Analysis"
-author: "Xinze Liu (xl2822)"
+author: "Xinze Liu (xl2822), Ting Cai (tc2945)"
 date: "2019/4/24"
 output: 
   html_document:
@@ -11,6 +11,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+The github repository that this report is according to can be found here: https://github.com/Sandman-Larissa/Graphics_Final_Project.
+
 ## I. Data Introduction
 
 
@@ -19,11 +21,88 @@ knitr::opts_chunk$set(echo = TRUE)
 data_raw <- read.csv("../Data/raw/NYPD_Complaint_Data_Current__Year_To_Date_.csv")
 ```
 
+## II. Description of the Data Source
+
+### II.i Data Source
+
+The data is published by NYC Open Data. The source link is: https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Current-Year-To-Date-/5uac-w243?category=Public-Safety&view_name=NYPD-Complaint-Data-Current-Year-To-Date-. It's provided by New York City Police Department (NYPD).
+
+This is a breakdown of every criminal complaint report filed in NYC by the NYPD from 2016 to 2018. This data is manually extracted every quarter and reviewed by the Office of Management Analysis and Planning. Each record represents a criminal complaint in NYC and includes information abot the type of crime, the location and time of enforcement. In addition, information related to victim and suspect demographics is also included. This data can be used by the public to explore the nature of criminal activity. 
+
+There are some other optinal dataset regarding to NYC crime, like CrimeReport(https://www.crimereports.com) or some other data published by NYC Open Data. As most of other datasets are based on this one, and the source of it is the most official，we finally chose it. 
+
+### II.ii Basic Information about Column Variables
+Here is the basic information about column variables:
+
 ```{r}
-apply(data_raw, 2, summary)
+# apply(data_raw, 2, summary)
 ```
 
-## II. Description of the data source
+| Column Names | Column Description | Type|
+|----------------|---------------------------------------------------------------------|---------|
+|CMPLNT_NUM|	Randomly generated persistent ID for each complaint | Number |
+|ADDR_PCT_CD|	The precinct in which the incident occurred| Number|
+|BORO|	The name of the borough in which the incident occurred|Plain Text|
+|CMPLNT_FR_DT|	Exact date of occurrence for the reported event (or starting date of occurrence, if CMPLNT_TO_DT exists)|Date & Time|
+|CMPLNT_FR_TM|	Exact time of occurrence for the reported event (or starting time of occurrence, if CMPLNT_TO_TM exists)|Plain Text|
+|CMPLNT_TO_DT|	Ending date of occurrence for the reported event, if exact time of occurrence is unknown|Date & Time|
+|CMPLNT_TO_TM|	Ending time of occurrence for the reported event, if exact time of occurrence is unknown|Plain Text|
+|CRM_ATPT_CPTD_CD|	Indicator of whether crime was successfully completed or attempted, but failed or was interrupted prematurely|Plain Text|
+|HADEVELOPT|	Name of NYCHA housing development of occurrence, if applicable|Plain Text|
+|HOUSING_PSA|	Development Level Code|Number|
+|JURISDICTION_CODE|	Jurisdiction responsible for incident. Either internal, like Police(0), Transit(1), and Housing(2); or external(3), like Correction, Port Authority, etc.|Number|
+|JURIS_DESC|	Description of the jurisdiction code|Plain Text|
+|KY_CD|	Three digit offense classification code|Number|Plain Text|
+|LAW_CAT_CD|	Level of offense: felony, misdemeanor, violation| Plain Text|
+|LOC_OF_OCCUR_DESC|	Specific location of occurrence in or around the premises; inside, opposite of, front of, rear of|Plain Text|
+|OFNS_DESC|	Description of offense corresponding with key code|Plain Text|
+|PARKS_NM|	Name of NYC park, playground or greenspace of occurrence, if applicable (state parks are not included)|Plain Text|
+|PATROL_BORO|	The name of the patrol borough in which the incident occurred|Plain Text|
+|PD_CD|	Three digit internal classification code (more granular than Key Code)|Number|
+|PD_DESC|	Description of internal classification corresponding with PD code (more granular than Offense Description)|Plain Text|
+|PREM_TYP_DESC|	Specific description of premises; grocery store, residence, street, etc.|Plain Text|
+|RPT_DT|	Date event was reported to police |Date & Time|
+|STATION_NAME|	Transit station name|Plain Text|
+|SUSP_AGE_GROUP|	Suspect’s Age Group|Plain Text|
+|SUSP_RACE|	Suspect’s Race Description|Plain Text|
+|SUSP_SEX|	Suspect’s Sex Description|Plain Text|
+|TRANSIT_DISTRICT|	Transit district in which the offense occurred.|Number|
+|VIC_AGE_GROUP|	Victim’s Age Group|Plain Text|
+|VIC_RACE|	Victim’s Race Description|Plain Text|
+|VIC_SEX|	Victim’s Sex Description|Plain Text|
+|X_COORD_CD|	X-coordinate for New York State Plane Coordinate System, Long Island Zone, NAD 83, units feet (FIPS 3104)|Number|
+|Y_COORD_CD|	Y-coordinate for New York State Plane Coordinate System, Long Island Zone, NAD 83, units feet (FIPS 3104)|Number|
+|Latitude|	Midblock Latitude coordinate for Global Coordinate System, WGS 1984, decimal degrees (EPSG 4326) |Number|
+|Longitude|	Midblock Longitude coordinate for Global Coordinate System, WGS 1984, decimal degrees (EPSG 4326)|Number|
+|Lat_Lon|	Midblock coordinate for Global Coordinate System, WGS 1984, decimal degrees (EPSG 4326)|Location|
+
+### II.iii Number of Records
+
+```{r}
+dim(data_raw)
+```
+
+Data has 464065 records and 35 features.
+
+### II.iv Issues about the Data
+
+Here are some issues about the data should be concerned or handled:
+
+1. Information is accurate as of the date it was queried from the system of record, but should be considered a close approximation of current records, due to complaint revisions and updates.
+
+2. Null values appearing frequently in certain fields may be attributed to changes on official department forms where data was previously not collected. Null values may also appear in instances where information was not available or unknown at the time of the report and should be considered as either “Unknown/Not Available/Not Reported.” We will analysis all the missing value in Part IV.
+
+3. Crime complaints which involve multiple offenses are classified according to the most serious offense. Attempted crimes are recorded regardless of whether or not the criminal act was successful, except in the instance of Attempted Murder, which is recorded as Felony Assault.
+
+4. There are usually three timestamps: *CMPLNT_FR_DT*, *CMPLNT_TO_DT*, *RPT_DT* are recorded for one complaint. When a complaint contains only a From Datetime, this represents the exact datetime when the crime incident was reported to occur. In the event a complaint has both a From Datetime and a To Datetime, a time range (rather than an exact time) was specified for the occurrence of the crime. In rare cases, records containing only a To Datetime indicate only a known endpoint to the crime.
+
+5. To further protect victim identities, rape and sex crime offenses have been located as occurring at the police station house within the precinct of occurrence. Many other offenses that were not able to be geo-coded (for example, due to an invalid address) have been located as occurring at the police station house within the precinct of occurrence. This means that we cannot obtain the exact incident site for this kind of offenses.
+
+6. Errors in data transcription may result in nominal data inconsistencies. We will check this kind of errors in Part III.
+
+7. Some mala prohibita offenses do not require a complaint report and may not be represented accurately, or at all, in this dataset. These incidents are generally tracked using other Department forms, including arrests and summonses. These include (but are not limited to) certain drug, trespassing, theft of service, and prostitution offenses. And only valid complaints are included in this release. So the number of records contained in the data tends to be less than that of the crime in reality.
+
+Please refer to the attached data files like footnotes for additional information about this dataset. These files can be found under the folder `Data/raw/`.
 
 ## III. Description of data import / cleaning / transformation
 
