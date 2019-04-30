@@ -327,6 +327,10 @@ write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
 
 ## V. Results
 
+
+
 ## VI. Interactive component
+
+
 
 ## VII. Conclusion
