@@ -108,14 +108,9 @@ Please refer to the attached data files like footnotes for additional informatio
 
 ## III. Description of data import / cleaning / transformation
 
-```{r}
-head(data_raw, 1)
-```
+There are some features that have repetitive information such as column **ADDR_PCT_CD** is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns **X_COORD_CD** and **Y_COORD_CD**, we will just use latitude and longitude to locate the accurate position.
 
-
-There are some features that have repetitive information such as column ADDR_PCT_CD is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns X_COORD_CD and Y_COORD_CD, we will just use latitude and longitude to locate the accurate position.
-
-There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT** and **LOC_OF_OCCUR_DESC**.
+There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT** and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -124,8 +119,8 @@ data_reduction <- data_raw %>%
 head(data_reduction, 1)
 ```
 
+The feature **KY_CD** and feature **OFNS_DESC** should be paired correspondingly, but we find some conflicts inside it such as below and the categories for OFNS_DESC is too specific.
 
-The feature KY_CD (Three digit offense classification code) and feature OFNS_DESC (Description of offense corresponding with key code) should be paired correspondingly, but we find some conflicts inside it such as below and the categories for OFNS_DESC is too specific.
 ```{r}
 data_reduction[data_reduction$KY_CD==120, ]%>%
   group_by(KY_CD, OFNS_DESC) %>%
@@ -139,7 +134,7 @@ data_reduction[data_reduction$KY_CD==345, ]%>%
 levels(data_reduction$OFNS_DESC)
 ```
 
-We are going to recategorize column OFNS_DESC into more general categories and delete column KY_CD.
+We are going to add a new column **OFNS_DESC_NEW** that recategorize **OFNS_DESC** into more general categories and delete column **KY_CD**.
 
 By the way, if you are interested in a particular crime type and do not know what is the meaning of it, you can check the website: http://ypdcrime.com/penal.law/.
 
@@ -216,7 +211,7 @@ data_reduction <- data_reduction %>%
   select(-KY_CD)
 ```
 
-There are some unreasonable values in columns SUSP_AGE_GROUP, SUSP_SEX, VIC_AGE_GROUP, VIC_RACE, VIC_SEX such as negative values in age, we decide to set them all to missing values.
+There are some unreasonable values in columns **SUSP_AGE_GROUP**, **SUSP_SEX**, **VIC_AGE_GROUP**, **VIC_RACE**, **VIC_SEX** such as negative values in age, we decide to set them all to missing values.
 
 ```{r results='hide'}
 levels(data_reduction$SUSP_AGE_GROUP)
@@ -225,19 +220,19 @@ levels(data_reduction$VIC_AGE_GROUP)
 levels(data_reduction$VIC_SEX)
 ```
 
-```{r}
+```{r results='hide'}
 # SUSP_AGE_GROUP
 data_reduction$SUSP_AGE_GROUP <- as.character(data_reduction$SUSP_AGE_GROUP)
-data_reduction[-which(data_reduction$SUSP_AGE_GROUP == "<18"| data_reduction$SUSP_AGE_GROUP == "18-24"| data_reduction$SUSP_AGE_GROUP == "25-44" | data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "65+"| data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "UNKNOWN"), ]$SUSP_AGE_GROUP <- ""
+data_reduction[-which(data_reduction$SUSP_AGE_GROUP == "<18"| data_reduction$SUSP_AGE_GROUP == "18-24"| data_reduction$SUSP_AGE_GROUP == "25-44" | data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "65+"| data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "UNKNOWN"), ]$SUSP_AGE_GROUP <- NA
 # SUSP_SEX
 data_reduction$SUSP_SEX <- as.character(data_reduction$SUSP_SEX)
-data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- ""
+data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- NA
 # VIC_AGE_GROUP
 data_reduction$VIC_AGE_GROUP <- as.character(data_reduction$VIC_AGE_GROUP)
-data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- ""
+data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- NA
 # VIC_SEX
 data_reduction$VIC_SEX <- as.character(data_reduction$VIC_SEX)
-data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- ""
+data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- NA
 
 levels(as.factor(data_reduction$SUSP_AGE_GROUP))
 levels(as.factor(data_reduction$SUSP_SEX))
@@ -245,7 +240,7 @@ levels(as.factor(data_reduction$VIC_AGE_GROUP))
 levels(as.factor(data_reduction$VIC_SEX))
 ```
 
-Finally, we only want to research on data from 2016-2018
+Finally, we only want to research on data from 2016-2018 since the crime information before 2016 is kind of out of date and maybe not useful for our research. After these cleaning and tidying, we still have 396675 records and 29 features.
 
 ```{r}
 data_reduction$CMPLNT_FR_DT <- as.Date(as.character(data_reduction$CMPLNT_FR_DT), "%m/%d/%Y")
@@ -253,6 +248,7 @@ data_reduction$CMPLNT_TO_DT <- as.Date(as.character(data_reduction$CMPLNT_TO_DT)
 data_reduction <- data_reduction %>%
   filter(CMPLNT_FR_DT > "2016-01-01" & CMPLNT_FR_DT <"2018-12-31")%>%
   filter(CMPLNT_TO_DT > "2016-01-01" & CMPLNT_TO_DT <"2018-12-31")
+dim(data_reduction)
 ```
 
 ## IV. Analysis of missing values
