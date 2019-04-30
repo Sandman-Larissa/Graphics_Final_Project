@@ -40,7 +40,7 @@ There are also some features that is irrevelent with what we want to research on
 
 There is a feature TRANSIT_DISTRICT that has null value for all observations. Since it was not used any more, we just delete it.
 
-```{r}
+```{r include=FALSE}
 library(tidyverse)
 data_reduction <- data_raw %>%
   select(-c(ADDR_PCT_CD, LOC_OF_OCCUR_DESC, STATION_NAME, TRANSIT_DISTRICT, X_COORD_CD, Y_COORD_CD))
