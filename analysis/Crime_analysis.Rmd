@@ -110,7 +110,7 @@ Please refer to the attached data files like footnotes for additional informatio
 
 There are some features that have repetitive information such as column **ADDR_PCT_CD** is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns **X_COORD_CD** and **Y_COORD_CD**, we will just use latitude and longitude to locate the accurate position.
 
-There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT** and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
+There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT**, and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -229,11 +229,9 @@ data_reduction$SUSP_SEX <- as.character(data_reduction$SUSP_SEX)
 data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- NA
 # VIC_AGE_GROUP
 data_reduction$VIC_AGE_GROUP <- as.character(data_reduction$VIC_AGE_GROUP)
-<<<<<<< HEAD
+
 data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == ""), ]$VIC_AGE_GROUP <- NA
-=======
-data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- NA
->>>>>>> 0973df5d4c06c01b16c46aaae637c48f173e640d
+
 # VIC_SEX
 data_reduction$VIC_SEX <- as.character(data_reduction$VIC_SEX)
 data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- NA
@@ -271,7 +269,7 @@ na_table <- function(df){
   filter(num > 0)
 }
 NA_table <- na_table(data_includeNA)
-NA_table$portion <- NA_table$num/nrow(NA_table)
+NA_table$portion <- NA_table$num/nrow(data_includeNA)
 head(NA_table, 5)
 ```
 
@@ -282,28 +280,35 @@ data_includeNA[, c("PARKS_NM", "HADEVELOPT", "HOUSING_PSA")] <- list(NULL)
 ```
 
 
-```{r fig.show='hide'}
-data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature]
-#colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
+```{r fig.height=8, fig.show='hide'}
+data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature[-c(1:3)]]
+colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
 extracat::visna(data_onlyNA, sort = "b", fr = 10)
 ```
 
 ![Analysis of Missing Values](../img/miss_value_pattern.png)
 
 ```{r}
-levels(data_includeNA$PREM_TYP_DESC)
+data_includeNA[is.na(data_includeNA$BORO_NM),c("Lat_Lon")]
+# levels(data_includeNA$BORO_NM)
+data_includeNA[is.na(data_includeNA$BORO_NM),c("BORO_NM")] <- c("MANHATTAN", "QUEENS", "BROOKLYN")
 ```
 
+```{r}
+head(data_includeNA[is.na(data_includeNA$CMPLNT_TO_TM),c("CMPLNT_FR_DT","CMPLNT_FR_TM","CMPLNT_TO_DT","RPT_DT")])
+```
 
 As 
 
 ```{r}
-data_includeNA <- data_rincludeNA[-which(is.na(data_onlyNA$Latitude) | is.na(data_onlyNA$longitude |)),]
+data_includeNA <- data_includeNA[-which(is.na(data_includeNA$Latitude) | is.na(data_includeNA$Longitude) | is.na(data_includeNA$OFNS_DESC) | is.na(data_includeNA$CMPLNT_TO_TM)),]
 na_to_unkonwn <- function(df){
   df[is.na(df)] <- "UNKNOWN"
   return(df)
 }
-data_tidy <- apply(data_includeNA, 2, na_to_unkonwn)
+data_tidy <- as.data.frame(apply(data_includeNA, 2, na_to_unkonwn))
+nrow(data_tidy) == nrow(na.omit(data_tidy))
+write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
 ```
 
 
