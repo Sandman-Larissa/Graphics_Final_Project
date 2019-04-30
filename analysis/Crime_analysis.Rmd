@@ -110,7 +110,7 @@ Please refer to the attached data files like footnotes for additional informatio
 
 There are some features that have repetitive information such as column **ADDR_PCT_CD** is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns **X_COORD_CD** and **Y_COORD_CD**, we will just use latitude and longitude to locate the accurate position.
 
-There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT** and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
+There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT**, and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -229,11 +229,9 @@ data_reduction$SUSP_SEX <- as.character(data_reduction$SUSP_SEX)
 data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- NA
 # VIC_AGE_GROUP
 data_reduction$VIC_AGE_GROUP <- as.character(data_reduction$VIC_AGE_GROUP)
-<<<<<<< HEAD
+
 data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == ""), ]$VIC_AGE_GROUP <- NA
-=======
-data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- NA
->>>>>>> 0973df5d4c06c01b16c46aaae637c48f173e640d
+
 # VIC_SEX
 data_reduction$VIC_SEX <- as.character(data_reduction$VIC_SEX)
 data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- NA
@@ -244,25 +242,21 @@ levels(as.factor(data_reduction$VIC_AGE_GROUP))
 levels(as.factor(data_reduction$VIC_SEX))
 ```
 
-Finally, we only want to research on data from 2016-2018 since the crime information before 2016 is kind of out of date and maybe not useful for our research. After these cleaning and tidying, we still have 396675 records and 29 features.
+Finally, we only want to research on data from 2018 since the crime information before 2018 is very few and kind of out of date and maybe not useful for our research. After these cleaning and tidying, we still have 387354 records and 29 features.
 
 ```{r}
 data_reduction$CMPLNT_FR_DT <- as.Date(as.character(data_reduction$CMPLNT_FR_DT), "%m/%d/%Y")
 data_reduction$CMPLNT_TO_DT <- as.Date(as.character(data_reduction$CMPLNT_TO_DT), "%m/%d/%Y")
 data_reduction <- data_reduction %>%
-  filter(CMPLNT_FR_DT > "2016-01-01" & CMPLNT_FR_DT <"2018-12-31")%>%
-  filter(CMPLNT_TO_DT > "2016-01-01" & CMPLNT_TO_DT <"2018-12-31")
+  filter(CMPLNT_FR_DT > "2018-01-01" & CMPLNT_FR_DT <"2018-12-31")%>%
+  filter(CMPLNT_TO_DT > "2018-01-01" & CMPLNT_TO_DT <"2018-12-31")
 dim(data_reduction)
 head(data_reduction)
 ```
 
 ## IV. Analysis of Missing Values
 
-<<<<<<< HEAD
-```{r fig.height=5, fig.width=10}
-#data <- data_reduction[-complete.cases(data_raw),]
-#extracat::visna(data, sort = "b", s = 1.5, pmax=0.001)
-=======
+
 ```{r}
 empty_to_na <- function(df){
   return(ifelse(df=="",NA, df))
@@ -277,9 +271,8 @@ na_table <- function(df){
   filter(num > 0)
 }
 NA_table <- na_table(data_includeNA)
-NA_table$portion <- NA_table$num/nrow(NA_table)
+NA_table$portion <- NA_table$num/nrow(data_includeNA)
 head(NA_table, 5)
->>>>>>> 3b4276ccf3cc3194afbea85582c619387c6d5579
 ```
 
 ```{r}
@@ -289,33 +282,37 @@ data_includeNA[, c("PARKS_NM", "HADEVELOPT", "HOUSING_PSA")] <- list(NULL)
 ```
 
 
-```{r fig.show='hide'}
-data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature]
-#colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
+```{r fig.height=8, fig.show='hide'}
+data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature[-c(1:3)]]
+colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
 extracat::visna(data_onlyNA, sort = "b", fr = 10)
 ```
 
 ![Analysis of Missing Values](../img/miss_value_pattern.png)
 
 ```{r}
-levels(data_includeNA$PREM_TYP_DESC)
+data_includeNA[is.na(data_includeNA$BORO_NM),c("Lat_Lon")]
+# levels(data_includeNA$BORO_NM)
+data_includeNA[is.na(data_includeNA$BORO_NM),c("BORO_NM")] <- c("MANHATTAN", "QUEENS", "BROOKLYN")
 ```
 
+```{r}
+head(data_includeNA[is.na(data_includeNA$CMPLNT_TO_TM),c("CMPLNT_FR_DT","CMPLNT_FR_TM","CMPLNT_TO_DT","RPT_DT")])
+```
 
 As 
 
 ```{r}
-<<<<<<< HEAD
-#colSums(is.na(data_raw)) %>% 
-#  sort(decreasing = TRUE) 
-=======
-data_includeNA <- data_rincludeNA[-which(is.na(data_onlyNA$Latitude) | is.na(data_onlyNA$longitude |)),]
+data_includeNA <- data_includeNA[-which(is.na(data_includeNA$Latitude) | is.na(data_includeNA$Longitude) | is.na(data_includeNA$OFNS_DESC) | is.na(data_includeNA$CMPLNT_TO_TM)),]
+
 na_to_unkonwn <- function(df){
   df[is.na(df)] <- "UNKNOWN"
   return(df)
 }
-data_tidy <- apply(data_includeNA, 2, na_to_unkonwn)
->>>>>>> 3b4276ccf3cc3194afbea85582c619387c6d5579
+
+data_tidy <- as.data.frame(apply(data_includeNA, 2, na_to_unkonwn), stringAsFactors = FALSE)
+#nrow(data_tidy) == nrow(na.omit(data_tidy))
+#write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
 ```
 
 
@@ -324,33 +321,143 @@ data_tidy <- apply(data_includeNA, 2, na_to_unkonwn)
 
 ```{r}
 library(vcd)
-library(ggplot2)
-library(ggmosaic)
-#library(plyr)
-#library(tidyverse)
 
-sort(table(data_reduction$OFNS_DESC_NEW), decreasing = TRUE)
-data_mosaic <- subset(data_reduction, OFNS_DESC_NEW == "ROBBERY/BURGLARY/LARCENY" | OFNS_DESC_NEW == "OFFENSES AGAINST THE PERSON"| OFNS_DESC_NEW == "UNCLASSIFIED STATE LAWS VIOLATION"| OFNS_DESC_NEW == "OFFENSES AGAINST PUBLIC ADMINI"| OFNS_DESC_NEW == "CRIME RELATED TO HEALTH")
-head(data_mosaic)
+data_tidy <- data_tidy[which(data_tidy$SUSP_SEX != "UNKNOWN"), ]
+data_tidy <- data_tidy[which(data_tidy$SUSP_AGE_GROUP != "UNKNOWN"), ]
 
-#data_mosaic <- data_mosaic[-which(data_reduction$SUSP_SEX == "NA"|data_reduction$SUSP_SEX == ""), ]
-#data_mosaic <- data_mosaic[-which(data_reduction$SUSP_AGE_GROUP == "UNKNOWN"|data_reduction$SUSP_AGE_GROUP == ""), ]
+data_mosaic <- subset(data_tidy, OFNS_DESC_NEW == "OFFENSES AGAINST THE PERSON" | OFNS_DESC_NEW == "ROBBERY/BURGLARY/LARCENY"| OFNS_DESC_NEW == "UNCLASSIFIED STATE LAWS VIOLATION"| OFNS_DESC_NEW == "OFFENSES AGAINST PUBLIC ADMINI"| OFNS_DESC_NEW == "CRIME RELATED TO HEALTH")
 
-data_mosaic$SUSP_SEX <- as.factor(data_mosaic$SUSP_SEX)
-data_mosaic$SUSP_AGE_GROUP <- as.factor(data_mosaic$SUSP_AGE_GROUP)
-data_mosaic$OFNS_DESC_NEW <- as.factor(data_mosaic$OFNS_DESC_NEW)
+sort(table(data_mosaic$OFNS_DESC_NEW), decreasing = TRUE)
+
+data_mosaic$SUSP_SEX <- factor(data_mosaic$SUSP_SEX, levels = c("F", "M"))
+data_mosaic$SUSP_AGE_GROUP <- factor(data_mosaic$SUSP_AGE_GROUP, levels = c("<18", "18-24", "25-44", "45-64", "65+"))
+data_mosaic$OFNS_DESC_NEW <- factor(data_mosaic$OFNS_DESC_NEW, levels = c("OFFENSES AGAINST THE PERSON", "ROBBERY/BURGLARY/LARCENY", "UNCLASSIFIED STATE LAWS VIOLATION", "OFFENSES AGAINST PUBLIC ADMINI", "CRIME RELATED TO HEALTH"))
 levels(data_mosaic$SUSP_SEX)
 levels(data_mosaic$SUSP_AGE_GROUP)
 levels(data_mosaic$OFNS_DESC_NEW)
 levels(data_mosaic$BORO_NM)
 icecreamcolors <- c("#ff99ff", "#cc9966")
-xmarks <- c("", "", "")
-mosaic(SUSP_SEX~ SUSP_AGE_GROUP + OFNS_DESC_NEW,data = data_mosaic,
-            direction = c("v", "v", "h"), 
-            gp = gpar(fill = icecreamcolors))
-ggplot(data = data_mosaic) + 
-  geom_mosaic(aes(x = product(OFNS_DESC_NEW, SUSP_AGE_GROUP, SUSP_SEX), fill=OFNS_DESC_NEW, conds=product(BORO_NM)), na.rm=TRUE, divider=mosaic("v"))+facet_grid(SUSP_SEX~.) +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+subs_pal <- colorspace:: sequential_hcl(5, "Oslo")
+snames <- list(set_varnames = c(SUSP_SEX="Suspect's Gender", SUSP_AGE_GROUP="Age Group for Suspect", OFNS_DESC_NEW="Crime Type"))
+mosaic(SUSP_AGE_GROUP~ OFNS_DESC_NEW + SUSP_SEX, data = data_mosaic,
+            direction = c("h", "h", "v"), labeling_args=snames, set_labels = list(OFNS_DESC_NEW = c("Assault","Rob","State","Pub","Health")),
+            gp = gpar(fill = subs_pal))
+```
+
+```{r}
+data_mosaic <- data_mosaic[which(data_mosaic$VIC_SEX != "UNKNOWN"), ]
+data_mosaic <- data_mosaic[which(data_mosaic$VIC_AGE_GROUP != "UNKNOWN"), ]
+data_mosaic$VIC_SEX <- factor(data_mosaic$VIC_SEX, levels = c("F", "M"))
+data_mosaic$VIC_AGE_GROUP <- factor(data_mosaic$VIC_AGE_GROUP, levels = c("<18", "18-24", "25-44", "45-64", "65+"))
+levels(data_mosaic$VIC_SEX)
+levels(data_mosaic$VIC_AGE_GROUP)
+vnames <- list(set_varnames = c(VIC_SEX="Victim's Gender", VIC_AGE_GROUP="Age Group for Victim", OFNS_DESC_NEW="Crime Type"))
+mosaic(VIC_AGE_GROUP~ OFNS_DESC_NEW + VIC_SEX, data = data_mosaic,
+            direction = c("h", "h", "v"), labeling_args=vnames, set_labels = list(OFNS_DESC_NEW = c("Assault","Rob","State","Pub","Health")),
+            gp = gpar(fill = subs_pal))
+```
+
+```{r}
+library(lubridate)
+data_time <- data_tidy
+head(data_time$CMPLNT_FR_DT)
+data_time$CMPLNT_FR_DT <- as.Date(as.character(data_time$CMPLNT_FR_DT), "%Y-%m-%d")
+data_time$num_of_crime <- rep(1, nrow(data_time))
+#data_time %>%
+#    group_by(Week = week(CMPLNT_FR_DT)) %>%
+#    count(OFNS_DESC_NEW)
+weekly <- data_time %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+  summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+ggplot(data_time, aes(CMPLNT_FR_DT, num_of_crime)) +
+    geom_line(color = "grey30") +
+    geom_line(data = weekly,
+              aes(Date, WeeklyCrime),
+              color = "blue", lwd = 1.5) +
+    scale_x_date(date_labels = "%b\n%Y") +
+    ylab("Daily Box Office Gross \n (in millions US$)") +
+    xlab("") +
+    ggtitle("Manchester by the Sea",
+            "Daily Gross, United States") +
+    theme_bw(16)
+```
+
+```{r}
+library(lubridate)
+data_time <- data_tidy
+head(data_time$CMPLNT_FR_DT)
+data_time$CMPLNT_FR_DT <- as.Date(as.character(data_time$CMPLNT_FR_DT), "%Y-%m-%d")
+data_time$num_of_crime <- rep(1, nrow(data_time))
+#data_time %>%
+#    group_by(Week = week(CMPLNT_FR_DT)) %>%
+#    count(OFNS_DESC_NEW)
+weeklyAssult <- data_time %>%
+    filter(OFNS_DESC_NEW == "OFFENSES AGAINST THE PERSON") %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+    summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+weeklyRob <- data_time %>%
+    filter(OFNS_DESC_NEW == "ROBBERY/BURGLARY/LARCENY") %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+    summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+weeklyState <- data_time %>%
+    filter(OFNS_DESC_NEW == "UNCLASSIFIED STATE LAWS VIOLATION") %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+    summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+weeklyPublic <- data_time %>%
+    filter(OFNS_DESC_NEW == "OFFENSES AGAINST PUBLIC ADMINI") %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+    summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+weeklyHealth <- data_time %>%
+    filter(OFNS_DESC_NEW == "CRIME RELATED TO HEALTH") %>%
+    group_by(Year = year(CMPLNT_FR_DT),
+             Week = week(CMPLNT_FR_DT)) %>%
+    summarize(WeeklyCrime = sum(num_of_crime)) %>%
+    mutate(Date = as.Date("2018-01-01") +
+               365*(Year - 2018) +
+               7*(Week -1))
+ggplot(data_time, aes(CMPLNT_FR_DT, num_of_crime)) +
+    geom_line(color = "grey30") +
+    geom_line(data = weeklyAssult,
+              aes(Date, WeeklyCrime),
+              color = "yellow", lwd = 0.5) +
+    geom_line(data = weeklyRob,
+              aes(Date, WeeklyCrime),
+              color = "red", lwd = 0.5) +
+    geom_line(data = weeklyState,
+              aes(Date, WeeklyCrime),
+              color = "grey", lwd = 0.5) +
+    geom_line(data = weeklyPublic,
+              aes(Date, WeeklyCrime),
+              color = "skyblue", lwd = 0.5) +
+    geom_line(data = weeklyHealth,
+              aes(Date, WeeklyCrime),
+              color = "green", lwd = 0.5)
+    scale_x_date(date_labels = "%b\n%Y") + 
+    ylab("Daily Box Office Gross \n (in millions US$)") +
+    xlab("") +
+    ggtitle("Manchester by the Sea",
+            "Daily Gross, United States") +
+    theme_bw(16)
 ```
 
 ## VI. Interactive component
