@@ -109,11 +109,21 @@ Please refer to the attached data files like footnotes for additional informatio
 ## IV. Analysis of missing values
 
 ```{r fig.height=8, fig.width=10}
-extracat::visna(data_raw[, -27], sort = "b", sort.method="optile", fr=50, pmax=0.05, s = 2)
+data <- data_raw[-complete.cases(data_raw),]
+extracat::visid(is.na(data)+0, sort = "b", s = 1.5, pmax=0.001)
+```
+```{r}
+na.omit(data)
 ```
 
 ```{r}
+data_raw[-complete.cases(data_raw),]
+```
 
+
+```{r}
+colSums(is.na(data_raw)) %>% 
+  sort(decreasing = TRUE) 
 ```
 
 
