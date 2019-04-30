@@ -249,13 +249,14 @@ data_reduction <- data_reduction %>%
   filter(CMPLNT_FR_DT > "2016-01-01" & CMPLNT_FR_DT <"2018-12-31")%>%
   filter(CMPLNT_TO_DT > "2016-01-01" & CMPLNT_TO_DT <"2018-12-31")
 dim(data_reduction)
+head(data_reduction)
 ```
 
 ## IV. Analysis of missing values
 
 ```{r fig.height=5, fig.width=10}
-data <- data_reduction[-complete.cases(data_raw),]
-extracat::visna(data, sort = "b", s = 1.5, pmax=0.001)
+#data <- data_reduction[-complete.cases(data_raw),]
+#extracat::visna(data, sort = "b", s = 1.5, pmax=0.001)
 ```
 
 ```{r}
@@ -268,12 +269,43 @@ extracat::visna(data, sort = "b", s = 1.5, pmax=0.001)
 
 
 ```{r}
-colSums(is.na(data_raw)) %>% 
-  sort(decreasing = TRUE) 
+#colSums(is.na(data_raw)) %>% 
+#  sort(decreasing = TRUE) 
 ```
 
 
 ## V. Results
+
+```{r}
+library(vcd)
+library(ggplot2)
+library(ggmosaic)
+#library(plyr)
+#library(tidyverse)
+
+sort(table(data_reduction$OFNS_DESC_NEW), decreasing = TRUE)
+data_mosaic <- subset(data_reduction, OFNS_DESC_NEW == "ROBBERY/BURGLARY/LARCENY" | OFNS_DESC_NEW == "OFFENSES AGAINST THE PERSON"| OFNS_DESC_NEW == "UNCLASSIFIED STATE LAWS VIOLATION"| OFNS_DESC_NEW == "OFFENSES AGAINST PUBLIC ADMINI"| OFNS_DESC_NEW == "CRIME RELATED TO HEALTH")
+head(data_mosaic)
+
+#data_mosaic <- data_mosaic[-which(data_reduction$SUSP_SEX == "NA"|data_reduction$SUSP_SEX == ""), ]
+#data_mosaic <- data_mosaic[-which(data_reduction$SUSP_AGE_GROUP == "UNKNOWN"|data_reduction$SUSP_AGE_GROUP == ""), ]
+
+data_mosaic$SUSP_SEX <- as.factor(data_mosaic$SUSP_SEX)
+data_mosaic$SUSP_AGE_GROUP <- as.factor(data_mosaic$SUSP_AGE_GROUP)
+data_mosaic$OFNS_DESC_NEW <- as.factor(data_mosaic$OFNS_DESC_NEW)
+levels(data_mosaic$SUSP_SEX)
+levels(data_mosaic$SUSP_AGE_GROUP)
+levels(data_mosaic$OFNS_DESC_NEW)
+levels(data_mosaic$BORO_NM)
+icecreamcolors <- c("#ff99ff", "#cc9966")
+xmarks <- c("", "", "")
+mosaic(SUSP_SEX~ SUSP_AGE_GROUP + OFNS_DESC_NEW,data = data_mosaic,
+            direction = c("v", "v", "h"), 
+            gp = gpar(fill = icecreamcolors))
+ggplot(data = data_mosaic) + 
+  geom_mosaic(aes(x = product(OFNS_DESC_NEW, SUSP_AGE_GROUP, SUSP_SEX), fill=OFNS_DESC_NEW, conds=product(BORO_NM)), na.rm=TRUE, divider=mosaic("v"))+facet_grid(SUSP_SEX~.) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
 
 ## VI. Interactive component
 
