@@ -108,6 +108,15 @@ Please refer to the attached data files like footnotes for additional informatio
 
 ## IV. Analysis of missing values
 
+```{r fig.height=8, fig.width=10}
+extracat::visna(data_raw[, -27], sort = "b", sort.method="optile", fr=50, pmax=0.05, s = 2)
+```
+
+```{r}
+
+```
+
+
 ## V. Results
 
 ## VI. Interactive component
