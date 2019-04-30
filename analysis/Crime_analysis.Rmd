@@ -228,16 +228,16 @@ levels(data_reduction$VIC_SEX)
 ```{r}
 # SUSP_AGE_GROUP
 data_reduction$SUSP_AGE_GROUP <- as.character(data_reduction$SUSP_AGE_GROUP)
-data_reduction[-which(data_reduction$SUSP_AGE_GROUP == "<18"| data_reduction$SUSP_AGE_GROUP == "18-24"| data_reduction$SUSP_AGE_GROUP == "25-44" | data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "65+"| data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "UNKNOWN"), ]$SUSP_AGE_GROUP <- ""
+data_reduction[-which(data_reduction$SUSP_AGE_GROUP == "<18"| data_reduction$SUSP_AGE_GROUP == "18-24"| data_reduction$SUSP_AGE_GROUP == "25-44" | data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "65+"| data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "UNKNOWN"), ]$SUSP_AGE_GROUP <- NA
 # SUSP_SEX
 data_reduction$SUSP_SEX <- as.character(data_reduction$SUSP_SEX)
-data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- ""
+data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- NA
 # VIC_AGE_GROUP
 data_reduction$VIC_AGE_GROUP <- as.character(data_reduction$VIC_AGE_GROUP)
-data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- ""
+data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == ""), ]$VIC_AGE_GROUP <- NA
 # VIC_SEX
 data_reduction$VIC_SEX <- as.character(data_reduction$VIC_SEX)
-data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- ""
+data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- NA
 
 levels(as.factor(data_reduction$SUSP_AGE_GROUP))
 levels(as.factor(data_reduction$SUSP_SEX))
@@ -255,26 +255,57 @@ data_reduction <- data_reduction %>%
   filter(CMPLNT_TO_DT > "2016-01-01" & CMPLNT_TO_DT <"2018-12-31")
 ```
 
-## IV. Analysis of missing values
+## IV. Analysis of Missing Values
 
-```{r fig.height=5, fig.width=10}
-data <- data_reduction[-complete.cases(data_raw),]
-extracat::visna(data, sort = "b", s = 1.5, pmax=0.001)
+```{r}
+empty_to_na <- function(df){
+  return(ifelse(df=="",NA, df))
+}
+data_includeNA <- as.data.frame(apply(data_reduction, 2, empty_to_na))
+na_table <- function(df){
+  table <- colSums(is.na(df)) %>% 
+  sort(decreasing = TRUE) %>% 
+  as.data.frame() %>%
+  set_names(c("num")) %>% 
+  rownames_to_column(var = "Feature") %>%
+  filter(num > 0)
+}
+NA_table <- na_table(data_includeNA)
+NA_table$portion <- NA_table$num/nrow(NA_table)
+head(NA_table, 5)
 ```
 
 ```{r}
-#na.omit(data)
+data_includeNA[, c("PARKS_NM", "HADEVELOPT", "HOUSING_PSA")] <- list(NULL)
+#NA_table <- na_table(data_includeNA)
+# NA_table
 ```
+
+
+```{r fig.show='hide'}
+data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature]
+#colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
+extracat::visna(data_onlyNA, sort = "b", fr = 10)
+```
+
+![Analysis of Missing Values](../img/miss_value_pattern.png)
 
 ```{r}
-#data_raw[-complete.cases(data_raw),]
+levels(data_includeNA$PREM_TYP_DESC)
 ```
 
+
+As 
 
 ```{r}
-colSums(is.na(data_raw)) %>% 
-  sort(decreasing = TRUE) 
+data_includeNA <- data_rincludeNA[-which(is.na(data_onlyNA$Latitude) | is.na(data_onlyNA$longitude |)),]
+na_to_unkonwn <- function(df){
+  df[is.na(df)] <- "UNKNOWN"
+  return(df)
+}
+data_tidy <- apply(data_includeNA, 2, na_to_unkonwn)
 ```
+
 
 
 ## V. Results
