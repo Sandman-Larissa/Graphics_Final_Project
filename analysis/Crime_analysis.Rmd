@@ -15,11 +15,12 @@ The github repository that this report is according to can be found here: https:
 
 ## I. Data Introduction
 
+We always receive emails regarding Crime Alert from Public Safety of Columbia University and safety definitely is our top priority. Thus, today we want to focus on the topics about Crime in New York City.
 
+We are interested in if the crime rate depends on borough(Bronx, Manhattan, Brooklyn, Queens, Staten Island).Thus, we can know where is relatively safe to live and which area should be paid attention to when we walk in. Also, we want to study if there is a relationship between gender and certain crime types and if the time that the crime happened played an important role. Maybe we have to be especially careful at night than in daytime.
 
-```{r cars}
-data_raw <- read.csv("../Data/raw/NYPD_Complaint_Data_Current__Year_To_Date_.csv")
-```
+Crime is usually refered as action that constitutes an offense that is punishable by law. We always use the crime rate in a certain area to measure the safety level for that area. The common types of crime are assault, theft, rape, kidnapping and robbery. Researching on crime can help us to know it better and further prevents us from it.
+
 
 ## II. Description of the Data Source
 
@@ -105,6 +106,156 @@ Here are some issues about the data should be concerned or handled:
 Please refer to the attached data files like footnotes for additional information about this dataset. These files can be found under the folder `Data/raw/`.
 
 ## III. Description of data import / cleaning / transformation
+
+```{r}
+head(data_raw, 1)
+```
+
+
+There are some features that have repetitive information such as column ADDR_PCT_CD is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns X_COORD_CD and Y_COORD_CD, we will just use latitude and longitude to locate the accurate position.
+
+There are also some features that is irrevelent with what we want to research on such as STATION_NAME(Transit station name) and LOC_OF_OCCUR_DESC (Specific location of occurrence in or around the premises; inside, opposite of, front of, rear of).
+
+There is a feature TRANSIT_DISTRICT that has null value for all observations. Since it was not used any more, we just delete it.
+
+```{r}
+library(tidyverse)
+data_reduction <- data_raw %>%
+  select(-c(ADDR_PCT_CD, LOC_OF_OCCUR_DESC, STATION_NAME, TRANSIT_DISTRICT, X_COORD_CD, Y_COORD_CD))
+head(data_reduction, 1)
+```
+
+
+The feature KY_CD (Three digit offense classification code) and feature OFNS_DESC (Description of offense corresponding with key code) should be paired correspondingly, but we find some conflicts inside it such as below and the categories for OFNS_DESC is too specific.
+```{r}
+data_reduction[data_reduction$KY_CD==120, ]%>%
+  group_by(KY_CD, OFNS_DESC) %>%
+  summarize()
+data_reduction[data_reduction$KY_CD==345, ]%>%
+  group_by(KY_CD, OFNS_DESC) %>%
+  summarize()
+```
+
+```{r}
+levels(data_reduction$OFNS_DESC)
+```
+
+We are going to recategorize column OFNS_DESC into more general categories and delete column KY_CD.
+
+By the way, if you are interested in a particular crime type and do not know what is the meaning of it, you can check the website: http://ypdcrime.com/penal.law/.
+
+```{r}
+#data_reduction[data_reduction$OFNS_DESC == "CHILD ABANDONMENT/NON SUPPORT" || data_reduction$OFNS_DESC == "KIDNAPPING" || data_reduction$OFNS_DESC == "ENDAN WELFARE INCOMP"|| data_reduction$OFNS_DESC == "OFFENSES RELATED TO CHILDREN", ]
+data_reduction$OFNS_DESC_NEW <- as.character(data_reduction$OFNS_DESC)
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "CHILD ABANDONMENT/NON SUPPORT"] <- "KIDNAPPING & RELATED OFFENSES"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "KIDNAPPING"] <- "KIDNAPPING & RELATED OFFENSES"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ENDAN WELFARE INCOMP"] <- "KIDNAPPING & RELATED OFFENSES"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OFFENSES RELATED TO CHILDREN"] <- "KIDNAPPING & RELATED OFFENSES"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OTHER OFFENSES RELATED TO THEF"] <- "OFFENSES RELATED TO THEF"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "THEFT OF SERVICES"] <- "OFFENSES RELATED TO THEF"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "POSSESSION OF STOLEN PROPERTY"] <- "OFFENSES RELATED TO THEF"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "THEFT-FRAUD"] <- "OFFENSES RELATED TO THEF"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "JOSTLING"] <- "OFFENSES RELATED TO THEF"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "INTOXICATED/IMPAIRED DRIVING"] <- "VEHICLE AND TRAFFIC LAWS"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "UNAUTHORIZED USE OF A VEHICLE"] <- "VEHICLE AND TRAFFIC LAWS"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "HOMICIDE-NEGLIGENT-VEHICLE"] <- "VEHICLE AND TRAFFIC LAWS"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "INTOXICATED & IMPAIRED DRIVING"] <- "VEHICLE AND TRAFFIC LAWS"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OFF. AGNST PUB ORD SENSBLTY &"] <- "OFFENSES AGAINST PUBLIC ADMINI"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OFFENSES AGAINST PUBLIC SAFETY"] <- "OFFENSES AGAINST PUBLIC ADMINI"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "PROSTITUTION & RELATED OFFENSES"] <- "SEX CRIMES AND RElATED"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "RAPE"] <- "SEX CRIMES AND RElATED"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "SEX CRIMES"] <- "SEX CRIMES AND RElATED"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ADMINISTRATIVE CODE"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "DISORDERLY CONDUCT"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "CRIMINAL MISCHIEF & RELATED OF"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "NYS LAWS-UNCLASSIFIED FELONY"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OTHER STATE LAWS (NON PENAL LA"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "MISCELLANEOUS PENAL LAW"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "NYS LAWS-UNCLASSIFIED VIOLATION"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OTHER STATE LAWS"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "UNCLASSIFIED STATE LAWS VIOLATION"] <- "UNCLASSIFIED STATE LAWS VIOLATION"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "FRAUDULENT ACCOSTING"] <- "ECONOMIC CRIME"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "LOITERING/GAMBLING (CARDS, DIC"] <- "ECONOMIC CRIME"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "FRAUDS"] <- "ECONOMIC CRIME"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "OFFENSES INVOLVING FRAUD"] <- "ECONOMIC CRIME"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "GAMBLING"] <- "ECONOMIC CRIME"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "FORGERY"] <- "ECONOMIC CRIME"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "AGRICULTURE & MRKTS LAW-UNCLASSIFIED"] <- "CRIME RELATED TO HEALTH"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "DANGEROUS DRUGS"] <- "CRIME RELATED TO HEALTH"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ALCOHOLIC BEVERAGE CONTROL LAW"] <- "CRIME RELATED TO HEALTH"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "NEW YORK CITY HEALTH CODE"] <- "CRIME RELATED TO HEALTH"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "UNLAWFUL POSS. WEAP. ON SCHOOL"] <- "WEAPON"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "DANGEROUS WEAPONS"] <- "WEAPON"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ANTICIPATORY OFFENSES"] <- "OFFENSES AGAINST THE PERSON"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ASSAULT 3 & RELATED OFFENSES"] <- "OFFENSES AGAINST THE PERSON"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "HARRASSMENT 2"] <- "OFFENSES AGAINST THE PERSON"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "FELONY ASSAULT"] <- "OFFENSES AGAINST THE PERSON"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "MURDER & NON-NEGL. MANSLAUGHTER"] <- "MURDER"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "HOMICIDE-NEGLIGENT,UNCLASSIFIE"] <- "WEAPON"
+
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "BURGLARY"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "PETIT LARCENY"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "BURGLAR'S TOOLS"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "GRAND LARCENY"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ROBBERY"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "PETIT LARCENY OF MOTOR VEHICLE"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "GRAND LARCENY OF MOTOR VEHICLE"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "CRIMINAL TRESPASS"] <- "ROBBERY/BURGLARY/LARCENY"
+data_reduction$OFNS_DESC_NEW[data_reduction$OFNS_DESC == "ESCAPE 3"] <- "CRIMINAL ESCAPE"
+
+
+levels(as.factor(data_reduction$OFNS_DESC_NEW))
+data_reduction <- data_reduction %>%
+  select(-KY_CD)
+```
+
+There are some unreasonable values in columns SUSP_AGE_GROUP, SUSP_SEX, VIC_AGE_GROUP, VIC_RACE, VIC_SEX such as negative values in age, we decide to set them all to missing values.
+
+```{r}
+levels(data_reduction$SUSP_AGE_GROUP)
+levels(data_reduction$SUSP_SEX)
+levels(data_reduction$VIC_AGE_GROUP)
+levels(data_reduction$VIC_SEX)
+```
+
+```{r}
+# SUSP_AGE_GROUP
+data_reduction$SUSP_AGE_GROUP <- as.character(data_reduction$SUSP_AGE_GROUP)
+data_reduction[-which(data_reduction$SUSP_AGE_GROUP == "<18"| data_reduction$SUSP_AGE_GROUP == "18-24"| data_reduction$SUSP_AGE_GROUP == "25-44" | data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "65+"| data_reduction$SUSP_AGE_GROUP == "45-64"| data_reduction$SUSP_AGE_GROUP == "UNKNOWN"), ]$SUSP_AGE_GROUP <- ""
+# SUSP_SEX
+data_reduction$SUSP_SEX <- as.character(data_reduction$SUSP_SEX)
+data_reduction[which(data_reduction$SUSP_SEX == "U"), ]$SUSP_SEX <- ""
+# VIC_AGE_GROUP
+data_reduction$VIC_AGE_GROUP <- as.character(data_reduction$VIC_AGE_GROUP)
+data_reduction[-which(data_reduction$VIC_AGE_GROUP == "<18"| data_reduction$VIC_AGE_GROUP == "18-24"| data_reduction$VIC_AGE_GROUP == "25-44" | data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "65+"| data_reduction$VIC_AGE_GROUP == "45-64"| data_reduction$VIC_AGE_GROUP == "UNKNOWN"), ]$VIC_AGE_GROUP <- ""
+# VIC_SEX
+data_reduction$VIC_SEX <- as.character(data_reduction$VIC_SEX)
+data_reduction[which(data_reduction$VIC_SEX == "U"| data_reduction$VIC_SEX == "D"| data_reduction$VIC_SEX == "E"), ]$VIC_SEX <- ""
+
+levels(as.factor(data_reduction$SUSP_AGE_GROUP))
+levels(as.factor(data_reduction$SUSP_SEX))
+levels(as.factor(data_reduction$VIC_AGE_GROUP))
+levels(as.factor(data_reduction$VIC_SEX))
+```
+
+Finally, we only want to research on data from 2016-2018
+
+```{r}
+data_reduction$CMPLNT_FR_DT <- as.Date(as.character(data_reduction$CMPLNT_FR_DT), "%m/%d/%Y")
+data_reduction$CMPLNT_TO_DT <- as.Date(as.character(data_reduction$CMPLNT_TO_DT), "%m/%d/%Y")
+data_reduction <- data_reduction %>%
+  filter(CMPLNT_FR_DT > "2016-01-01" & CMPLNT_FR_DT <"2018-12-31")%>%
+  filter(CMPLNT_TO_DT > "2016-01-01" & CMPLNT_TO_DT <"2018-12-31")
+```
 
 ## IV. Analysis of missing values
 
