@@ -329,6 +329,11 @@ write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
 
 ## V. Results
 
+First, we want to explore if the suspect's age, crime's types, and suspect's gender have correlations with a crime and if the Victim's age, crime's types, and Victim's genders are related to a crime. Since all these variables are categories, we decide to plot mosaic to explore the relationships between them. There are lots of "UNKNOWN" values in suspect's age, suspect's gender, victim's age and victim's gender that is unhelpful here, so we just delete them for this plot.Because there are too many crime types to plot on mosaic plot. Then, we select 5 most popular crime type based on the frequecies each of them happened.
+Finally, we have our mosaic plots.
+
+By the way, the suspect's gender is a independent variable. We know it is better to place it at left edge vertically, but since other variables has much more vategoreis than gender. For better visialization, we put it in the position now it is.
+
 ```{r}
 library(vcd)
 
@@ -354,6 +359,9 @@ mosaic(SUSP_AGE_GROUP~ OFNS_DESC_NEW + SUSP_SEX, data = data_mosaic,
             gp = gpar(fill = subs_pal))
 ```
 
+In this mosaic plot, we can see for all kinds of crimes, the number of male suspects are pretty more than the number of female suspects. Also, the most likely age range for suspects are between 25 and 44. It is reasonable since the strength for people in this age range are strongest. In addition, the small lines between the corresponding sets of boxes almost align, which means the age range is independent with either suspect's gender and type of crimes.
+
+
 ```{r}
 data_mosaic <- data_mosaic[which(data_mosaic$VIC_SEX != "UNKNOWN"), ]
 data_mosaic <- data_mosaic[which(data_mosaic$VIC_AGE_GROUP != "UNKNOWN"), ]
@@ -366,6 +374,8 @@ mosaic(VIC_AGE_GROUP~ OFNS_DESC_NEW + VIC_SEX, data = data_mosaic,
             direction = c("h", "h", "v"), labeling_args=vnames, set_labels = list(OFNS_DESC_NEW = c("Assault","Rob","State","Pub","Health")),
             gp = gpar(fill = subs_pal))
 ```
+
+Similar with the mosaic plot above, but here the number of female victims are pretty more than the number of male victims. It is common sense that females's strength are weaker than males' strength. So maybe suspects' always choose female victims to harm. The age range are pretty similar to the one for suspects. It is worth to note that for **ROBBERY/BURGLARY/LARCENY**, **UNCLASSIFIED STATE LAWS VIOLATION**,**CRIME RELATED TO HEALTH** three kinds of crimes, the small lines between the corresponding sets of boxes are not align, which indicates that the age ranges for victims are dependent on victim's gender on these kinds of crimes. Like the number of male victims who are robbed are much more than the number of female victims who are robbed who under 18 years old.
 
 ```{r}
 library(lubridate)
@@ -387,14 +397,15 @@ ggplot(data_time, aes(CMPLNT_FR_DT, num_of_crime)) +
     geom_line(color = "grey30") +
     geom_line(data = weekly,
               aes(Date, WeeklyCrime),
-              color = "blue", lwd = 1.5) +
+              color = "blue", lwd = 1) +
     scale_x_date(date_labels = "%b\n%Y") +
-    ylab("Daily Box Office Gross \n (in millions US$)") +
+    ylab("number of crime)") +
     xlab("") +
-    ggtitle("Manchester by the Sea",
-            "Daily Gross, United States") +
     theme_bw(16)
 ```
+
+
+Then, we want to explore the trend of number of crimes for different type of crimes with time.
 
 ```{r}
 library(lubridate)
@@ -463,13 +474,94 @@ ggplot(data_time, aes(CMPLNT_FR_DT, num_of_crime)) +
               aes(Date, WeeklyCrime),
               color = "green", lwd = 0.5) +
     scale_x_date(date_labels = "%b\n%Y") + 
-    ylab("Daily Box Office Gross \n (in millions US$)") +
+    ylab("number of crimes") +
     xlab("") +
-    ggtitle("Manchester by the Sea",
-            "Daily Gross, United States") +
     theme_bw(16)
 ```
 
+In the plot, it seems like that there is a sharp increasing of number of crimes in the beginning of 2018 for all kinds of crimes. Then all lines fluctuate a little bit in the middle and finally there seems have a smooth decreasing at the end of 2018.
+
+
+To show the trends of different boroughs, we choose to use parcoords plot.
+
+```{r}
+library(dplyr)
+library(parcoords)
+
+data_p <- data_mosaic
+data_Type <- data_p %>%
+  count(OFNS_DESC_NEW, BORO_NM) %>%
+  group_by(OFNS_DESC_NEW,BORO_NM) %>%
+  spread(key = OFNS_DESC_NEW, value = n)
+colnames(data_Type) <- c("BORO_NM", "Assult","Rob","State","Pub","Health")
+
+data_p$num_of_crime <- rep(1, nrow(data_p))
+total_male = length(which(data_p$SUSP_SEX == "M")) 
+
+Male_ratio <- data_p %>%
+  group_by(BORO_NM) %>%
+  filter(SUSP_SEX == "M") %>%
+  summarize(M_ratio = sum(num_of_crime)/total_male)
+
+data_p$time <- round(as.numeric(hms(data_p$CMPLNT_FR_TM))/3600)
+
+time_period <- data_p %>%
+  count(time, BORO_NM) %>%
+  group_by(BORO_NM) %>%
+  filter(n == max(n)) %>%
+  select(time)
+
+data_par <- full_join(data_Type, Male_ratio)
+data_parc <- full_join(data_par, time_period)
+
+Total_num_crime <- data_p %>%
+  group_by(BORO_NM) %>%
+  summarize(Total_num_crime = sum(num_of_crime))
+
+data_parcoord <- full_join(data_parc, Total_num_crime)
+
+data_parcoord %>% arrange(Total_num_crime) %>%
+  parcoords(
+    rownames = F 
+    , brushMode = "1D-axes"
+    , reorderable = T
+    , queue = T
+    , alpha = 0.8
+    , color = list(
+      colorBy = "BORO_NM"
+      , colorScale = htmlwidgets::JS("d3.scale.category10()")
+    )
+  )
+```
+
+From this plot, we discover Brooklyn  and Queen Boroughs are relatively dangerous and Staten Island is relatively safe. The most common crime types in Manhattan are **ROBBERY/BURGLARY/LARCENY** and **OFFENSES AGAINST PUBLIC ADMINI**.
+
+Finally, to research on the relationships on Suspect's Races for number of crimes of all different kinds of crime types, we choose to use cleveland plot.
+
+```{r}
+data_Cleveland <- data_tidy %>%
+  count(SUSP_RACE, OFNS_DESC_NEW) %>%
+  group_by(SUSP_RACE,OFNS_DESC_NEW)
+colnames(data_Cleveland) <- c("Race", "Crime_Type", "num_of_crime")
+theme_dotplot <- theme_bw(16) +
+    theme(axis.text.y = element_text(size = rel(.75)),
+          axis.ticks.y = element_blank(),
+          axis.title.x = element_text(size = rel(.75)),
+          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_line(size = 0.5),
+          panel.grid.minor.x = element_blank())
+
+ggplot(data_Cleveland, aes(x = num_of_crime, y = fct_reorder2(Crime_Type, fct_relevel(Race, "BLACK", after = Inf), -num_of_crime))) +
+    theme_dotplot + 
+    geom_point(aes(col = Race)) +
+    labs(x = "number of Crime", y = "Type of Crime") +
+    ggtitle("number for different type of Crimes") + 
+    scale_color_discrete(name="Race",
+                         breaks=c("AMERICAN INDIAN/ALASKAN NATIVE", "ASIAN / PACIFIC ISLANDER", "BLACK", "BLACK HISPANIC", "UNKNOWN", "WHITE", "WHITE HISPANIC"),
+                         labels=c("Amer Ind/Ala", "Asi/Pac", "Black", "B Hisp", "UNKNOWN", "WHITE", "W Hisp"))
+```
+
+It seems like that for some dangerous crimes such as **ROBBERY/BURGLARY/LARCENY** and **OFFENSES AGAINST THE PERSON** and **WEAPON**, those suspects whose races are most likely black.
 
 ## VI. Interactive component
 
