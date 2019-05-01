@@ -108,9 +108,9 @@ Please refer to the attached data files like footnotes for additional informatio
 
 ## III. Description of data import / cleaning / transformation
 
-There are some features that have repetitive information such as column **ADDR_PCT_CD** is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns **X_COORD_CD** and **Y_COORD_CD**, we will just use latitude and longitude to locate the accurate position.
+There are some features that have repetitive information such as column `ADDR_PCT_CD` is the precinct in which the incident occurred and we've alreay have enough information about the location that the incident occurred, so we do not need it. Same thing for columns `X_COORD_CD` and `Y_COORD_CD`, we will just use latitude and longitude to locate the accurate position.
 
-There are also some features that is irrevelent with what we want to research on such as **STATION_NAME**, **TRANSIT_DISTRICT**, and **LOC_OF_OCCUR_DESC**.So, we do not need include them.
+There are also some features that is irrevelent with what we want to research on such as `STATION_NAME`, `TRANSIT_DISTRICT`, and `LOC_OF_OCCUR_DESC`.So, we do not need include them.
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -119,7 +119,7 @@ data_reduction <- data_raw %>%
 head(data_reduction, 1)
 ```
 
-The feature **KY_CD** and feature **OFNS_DESC** should be paired correspondingly, but we find some conflicts inside it such as below and the categories for OFNS_DESC is too specific.
+The feature `KY_CD` and feature `OFNS_DESC` should be paired correspondingly, but we find some conflicts inside it such as below and the categories for OFNS_DESC is too specific.
 
 ```{r}
 data_reduction[data_reduction$KY_CD==120, ]%>%
@@ -134,7 +134,7 @@ data_reduction[data_reduction$KY_CD==345, ]%>%
 levels(data_reduction$OFNS_DESC)
 ```
 
-We are going to add a new column **OFNS_DESC_NEW** that recategorize **OFNS_DESC** into more general categories and delete column **KY_CD**.
+We are going to add a new column `OFNS_DESC_NEW` that recategorize `OFNS_DESC` into more general categories and delete column `KY_CD`.
 
 By the way, if you are interested in a particular crime type and do not know what is the meaning of it, you can check the website: http://ypdcrime.com/penal.law/.
 
@@ -211,7 +211,7 @@ data_reduction <- data_reduction %>%
   select(-KY_CD)
 ```
 
-There are some unreasonable values in columns **SUSP_AGE_GROUP**, **SUSP_SEX**, **VIC_AGE_GROUP**, **VIC_RACE**, **VIC_SEX** such as negative values in age, we decide to set them all to missing values.
+There are some unreasonable values in columns `SUSP_AGE_GROUP`, `SUSP_SEX`, `VIC_AGE_GROUP`, `VIC_RACE`, `VIC_SEX` such as negative values in age, we decide to set them all to missing values.
 
 ```{r results='hide'}
 levels(data_reduction$SUSP_AGE_GROUP)
@@ -256,12 +256,18 @@ head(data_reduction)
 
 ## IV. Analysis of Missing Values
 
+As many missing informations in data are represented by "", we first convert all of them into NA.
 
 ```{r}
 empty_to_na <- function(df){
   return(ifelse(df=="",NA, df))
 }
 data_includeNA <- as.data.frame(apply(data_reduction, 2, empty_to_na))
+```
+
+Then analyse missing values by column. The features having the five most missing values are shown as below.
+
+```{r}
 na_table <- function(df){
   table <- colSums(is.na(df)) %>% 
   sort(decreasing = TRUE) %>% 
@@ -275,12 +281,13 @@ NA_table$portion <- NA_table$num/nrow(data_includeNA)
 head(NA_table, 5)
 ```
 
+As we can see that `PARKS_NM`, `HADEVELOPT`, and `HOUSING_PSA` have too many missing values whose portion is close to 1, which means we can hardly get useful information from them, we just remove these three features from data.
+
 ```{r}
 data_includeNA[, c("PARKS_NM", "HADEVELOPT", "HOUSING_PSA")] <- list(NULL)
-#NA_table <- na_table(data_includeNA)
-# NA_table
 ```
 
+Then we use visna() to find the ten most common missing paterns.
 
 ```{r fig.height=8, fig.show='hide'}
 data_onlyNA <- data_includeNA[-which(complete.cases(data_includeNA)==TRUE), NA_table$Feature[-c(1:3)]]
@@ -288,34 +295,37 @@ colnames(data_onlyNA) <- sapply(colnames(data_onlyNA), tolower)
 extracat::visna(data_onlyNA, sort = "b", fr = 10)
 ```
 
-![Analysis of Missing Values](../img/miss_value_pattern.png)
+![](../img/miss_value_pattern.png)
+
+In terms of the graph, we can find that the detail records about supspects and victims are the primary missing information. 
+
+There are only three recods without `BORO_NM`. Acording to the GPS coordinate `Lat_Lon`, we can complement the names of borough where the crime happened manually.
 
 ```{r}
-data_includeNA[is.na(data_includeNA$BORO_NM),c("Lat_Lon")]
-# levels(data_includeNA$BORO_NM)
+# data_includeNA[is.na(data_includeNA$BORO_NM),c("Lat_Lon")]
+boro_nm_na <- is.na(data_includeNA$BORO_NM)
 data_includeNA[is.na(data_includeNA$BORO_NM),c("BORO_NM")] <- c("MANHATTAN", "QUEENS", "BROOKLYN")
+data_includeNA[boro_nm_na, c("Lat_Lon", "BORO_NM"), ]
 ```
+
+For `CMPLNT_TO_TM`, we failed to find any commons among all missing records. Since we cannot deduce the true time when crime was completed, this feature was just removed from data. Similarly, the records whose `Latitude`, `Longitude`, `Lat_Lon`, `OFNS_DESC`, or `OFNS_DESC_NEW` are missing were deleted. For the rest of missing values, we choose to convert them into "UNKNOWN".
 
 ```{r}
 head(data_includeNA[is.na(data_includeNA$CMPLNT_TO_TM),c("CMPLNT_FR_DT","CMPLNT_FR_TM","CMPLNT_TO_DT","RPT_DT")])
-```
-
-As 
-
-```{r}
 data_includeNA <- data_includeNA[-which(is.na(data_includeNA$Latitude) | is.na(data_includeNA$Longitude) | is.na(data_includeNA$OFNS_DESC) | is.na(data_includeNA$CMPLNT_TO_TM)),]
 
 na_to_unkonwn <- function(df){
   df[is.na(df)] <- "UNKNOWN"
   return(df)
 }
-
-data_tidy <- as.data.frame(apply(data_includeNA, 2, na_to_unkonwn), stringAsFactors = FALSE)
-#nrow(data_tidy) == nrow(na.omit(data_tidy))
-#write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
+data_tidy <- as.data.frame(apply(data_includeNA, 2, na_to_unkonwn), stringsAsFactors = FALSE)
 ```
 
-
+Finally we get the dataframe `data_tidy` by all above cleaning processes. The number of rows didn't change after deleting missing values by using na.omit(), which means there is no missing value in it.
+```{r}
+nrow(data_tidy) == nrow(na.omit(data_tidy))
+write_csv(data_tidy, "../Data/tidy/NYC_crime_from_2016_to_2018.csv")
+```
 
 ## V. Results
 
