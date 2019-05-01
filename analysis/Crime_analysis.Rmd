@@ -44,7 +44,7 @@ data_raw <- read.csv("../Data/raw/NYPD_Complaint_Data_Current__Year_To_Date_.csv
 |----------------|---------------------------------------------------------------------|---------|
 |CMPLNT_NUM|	Randomly generated persistent ID for each complaint | Number |
 |ADDR_PCT_CD|	The precinct in which the incident occurred| Number|
-|BORO|	The name of the borough in which the incident occurred|Plain Text|
+|BORO_NM|	The name of the borough in which the incident occurred|Plain Text|
 |CMPLNT_FR_DT|	Exact date of occurrence for the reported event (or starting date of occurrence, if CMPLNT_TO_DT exists)|Date & Time|
 |CMPLNT_FR_TM|	Exact time of occurrence for the reported event (or starting time of occurrence, if CMPLNT_TO_TM exists)|Plain Text|
 |CMPLNT_TO_DT|	Ending date of occurrence for the reported event, if exact time of occurrence is unknown|Date & Time|
@@ -564,5 +564,16 @@ ggplot(data_Cleveland, aes(x = num_of_crime, y = fct_reorder2(Crime_Type, fct_re
 It seems like that for some dangerous crimes such as **ROBBERY/BURGLARY/LARCENY** and **OFFENSES AGAINST THE PERSON** and **WEAPON**, those suspects whose races are most likely black.
 
 ## VI. Interactive component
+
+### VI.i NYC Crime Map
+
+We used shiny and leaflet to build up a crime map which shows all primary information of NYC crime in 2018. In our Crime Map Web, you can filter the time range, borough range, and so on to find the distribution and detail information of crime event.
+
+https://sandman-larissa.shinyapps.io/CrimeMap/
+
+### VI.ii Guess
+
+This part we build a website to let users make interesting guess about NYC crime.
+https://bl.ocks.org/Sandman-Larissa/8e6e2960ac28511668846abb2c2110ee
 
 ## VII. Conclusion
