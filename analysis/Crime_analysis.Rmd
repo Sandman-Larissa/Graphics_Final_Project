@@ -583,6 +583,10 @@ We used shiny and leaflet to build up a crime map which shows all primary inform
 
 https://sandman-larissa.shinyapps.io/CrimeMap/
 
+![](../img/web-app.png)
+
+There are still some problems on our web application. As the limit of memory supported by shinyapps, when we try to show date of more than four months, it will return Error: Out of Memory. Because of the same reason, although we have various information of per crime event and we know how to write code to show all of them, we finally just chose three features.
+
 ### VI.ii Guess
 
 This part we build a website to let users make interesting guess about NYC crime.
