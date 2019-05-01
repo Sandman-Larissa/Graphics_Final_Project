@@ -381,7 +381,7 @@ mosaic(VIC_AGE_GROUP~ OFNS_DESC_NEW + VIC_SEX, data = data_mosaic,
 
 Similar with the mosaic plot above, but here visually we see more victims are female rather than male because the female columns of rectangles for all different kind of crimes are higher than female's. It is common sense that females's strength are less than males' strength. So maybe suspects' are more likely to choose female victims to make a crime. For the columns of table: Age_Group, Of crime types **ROBBERY/BURGLARY/LARCENY**, a higher proportion were under 18 for male than for female because of the width of the rectangles while of other crim types, the propertion of under 18 are pretty even. Also, for all different kind of crimes, a much higher proportion were 45-64 for male than for female. It is also worth to note that for **ROBBERY/BURGLARY/LARCENY**, **UNCLASSIFIED STATE LAWS VIOLATION**,**CRIME RELATED TO HEALTH** three kinds of crimes, the small lines between the corresponding sets of boxes are not align, which indicates that the age ranges for victims are dependent on victim's gender on these kinds of crimes. 
 
-```{r fig.height=8, fig.show='hide'}
+```{r fig.show='hide'}
 library(lubridate)
 data_time <- data_tidy
 #head(data_time$CMPLNT_FR_DT)
@@ -579,7 +579,7 @@ There is an observation that for most of crime types, the suspect' race with hig
 
 ### VI.i NYC Crime Map
 
-We used shiny and leaflet to build up a crime map which shows all primary information of NYC crime in 2018. In our Crime Map Web, you can filter the time range, borough range, and so on to find the distribution and detail information of crime event.
+We used shiny and leaflet to build up a crime map which shows all primary information of NYC crime in 2018. In our Crime Map Web, you can filter the time range, borough range, and so on to find the distribution and detail in
 
 https://sandman-larissa.shinyapps.io/CrimeMap/
 
@@ -593,3 +593,15 @@ This part we build a website to let users make interesting guess about NYC crime
 https://bl.ocks.org/Sandman-Larissa/8e6e2960ac28511668846abb2c2110ee
 
 ## VII. Conclusion
+
+### VII.i limitations
+
+One of our most important limitation is that all the variables in our dataset are categorical variables. Thus, it takes us a lot of efforts to transform the dataset into the one fit for visializations so that can offer some essential information. But still the information is too limited. Also, some factor variables have too many levels that cannot be used for visialization. In addition, the size of our dataset is too large. As a result, the time for plotting and web application manipulation is kind of long. That also makes some trouble for us.
+
+### VII.ii future directions
+
+We may need to explore methods that can better research on complex dataset like this. For this crime dataset, maybe we can combine data for some continuous variables such as unexployment rate with the original data based on date. I think those information will be really helpful to discover more crime patterns and even kind of predict.
+
+### VII.iii lessons learned
+
+After doing this project, we have a general idea of the crime frequencies and related information for each borough of New York city. Though we did not put all the plots we tried on this project, we thoroughly reviewed the knowledge about multivariate categorical data visialization by keep trying different plots. In addition, we learned another visialization tool shiny.
